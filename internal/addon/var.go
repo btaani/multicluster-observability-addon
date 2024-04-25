@@ -21,10 +21,12 @@ const (
 	AdcLoggingDisabledKey = "loggingDisabled"
 	AdcTracingisabledKey  = "tracingDisabled"
 
-	SignalLabelKey        = "mcoa.openshift.io/signal"
-	Metrics        Signal = "metrics"
-	Logging        Signal = "logging"
-	Tracing        Signal = "tracing"
+	SignalLabelKey          = "mcoa.openshift.io/signal"
+	Metrics          Signal = "metrics"
+	Logging          Signal = "logging"
+	Tracing          Signal = "tracing"
+	ClusterLoggingNS        = "openshift-logging"
+	CollectorNS             = "spoke-otelcol"
 )
 
 //go:embed manifests
