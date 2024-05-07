@@ -3,6 +3,7 @@ package addon
 import (
 	"fmt"
 
+	"k8s.io/klog/v2"
 	"open-cluster-management.io/addon-framework/pkg/agent"
 	"open-cluster-management.io/addon-framework/pkg/utils"
 	addonapiv1alpha1 "open-cluster-management.io/api/addon/v1alpha1"
@@ -36,58 +37,41 @@ func GetObjectKey(configRef []addonapiv1alpha1.ConfigReference, group, resource 
 
 func AgentHealthProber() *agent.HealthProber {
 	return &agent.HealthProber{
-		Type: agent.HealthProberTypeDeploymentAvailability,
+		Type: agent.HealthProberTypeWork,
 		WorkProber: &agent.WorkHealthProber{
 			ProbeFields: []agent.ProbeField{
 				{
 					ResourceIdentifier: workapiv1.ResourceIdentifier{
-						Group:     "apps",
-						Resource:  "deployments",
-						Name:      "cluster-logging-operator",
+						Group:     "logging.openshift.io",
+						Resource:  "clusterlogforwarders",
+						Name:      "instance",
 						Namespace: ClusterLoggingNS,
 					},
 					ProbeRules: []workapiv1.FeedbackRule{
 						{
-							Type: workapiv1.WellKnownStatusType,
-						},
-					},
-				},
-				{
-					ResourceIdentifier: workapiv1.ResourceIdentifier{
-						Group:     "apps",
-						Resource:  "deployments",
-						Name:      "spoke-otelcol-collector",
-						Namespace: CollectorNS,
-					},
-					ProbeRules: []workapiv1.FeedbackRule{
-						{
-							Type: workapiv1.WellKnownStatusType,
+							Type: workapiv1.JSONPathsType,
+							JsonPaths: []workapiv1.JsonPath{
+								{
+									Name: "conditions",
+									Path: ".status.conditions",
+								},
+							},
 						},
 					},
 				},
 			},
 			HealthCheck: func(identifier workapiv1.ResourceIdentifier, result workapiv1.StatusFeedbackResult) error {
-				if identifier.Resource != "deployments" {
-					return fmt.Errorf("unsupported resource type %s", identifier.Resource)
-				}
-				if identifier.Group != "apps" {
-					return fmt.Errorf("unsupported resource group %s", identifier.Group)
-				}
-				if len(result.Values) == 0 {
-					return fmt.Errorf("no values are probed for deployment %s/%s", identifier.Namespace, identifier.Name)
-				}
-				for _, value := range result.Values {
-					if value.Name != "ReadyReplicas" {
-						continue
+				for _, feedbackValue := range result.Values {
+					if feedbackValue.Name == "conditions" {
+						klog.Info("CLF conditions found")
+					} else {
+						conditionsErr := fmt.Errorf("addon clf has unexpected conditions value")
+						klog.ErrorS(conditionsErr, "Sub may not have installed clf")
+						return conditionsErr
 					}
-
-					if *value.Value.Integer >= 1 {
-						return nil
-					}
-
-					return fmt.Errorf("readyReplicas is %d for deployement %s/%s", *value.Value.Integer, identifier.Namespace, identifier.Name)
 				}
-				return fmt.Errorf("readyReplicas is not probed")
+				klog.InfoS("health check successful")
+				return nil
 			},
 		},
 	}
