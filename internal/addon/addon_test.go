@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	otelv1alpha1 "github.com/open-telemetry/opentelemetry-operator/apis/v1alpha1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,36 +18,34 @@ import (
 
 func Test_AgentHealthProber_Healthy(t *testing.T) {
 	fakeKubeClient := fake.NewClientBuilder().Build()
-	colDeployment := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps",
-			Kind:       "deployments",
-		},
+
+	var replicas int32 = 1
+	otelCol := &otelv1alpha1.OpenTelemetryCollector{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "spoke-otelcol-collector",
+			Name:      "spoke-otelcol",
 			Namespace: "spoke-otelcol",
 		},
-		Status: appsv1.DeploymentStatus{
-			ReadyReplicas: 1,
+		Spec: otelv1alpha1.OpenTelemetryCollectorSpec{
+			Replicas: &replicas,
 		},
 	}
 
-	err := fakeKubeClient.Create(context.TODO(), colDeployment, &client.CreateOptions{})
+	err := fakeKubeClient.Create(context.TODO(), otelCol, &client.CreateOptions{})
 	require.NoError(t, err)
 
-	readyReplicas := int64(colDeployment.Status.ReadyReplicas)
+	readyReplicas := int64(*otelCol.Spec.Replicas)
 
-	healthProber := AgentHealthProber()
+	healthProber := AgentHealthProber(fakeKubeClient)
 
 	err = healthProber.WorkProber.HealthCheck(v1.ResourceIdentifier{
-		Group:     colDeployment.APIVersion,
-		Resource:  colDeployment.Kind,
-		Name:      colDeployment.Name,
-		Namespace: colDeployment.Namespace,
+		Group:     otelCol.APIVersion,
+		Resource:  otelCol.Kind,
+		Name:      otelCol.Name,
+		Namespace: otelCol.Namespace,
 	}, v1.StatusFeedbackResult{
 		Values: []v1.FeedbackValue{
 			{
-				Name: "ReadyReplicas",
+				Name: "replicas",
 				Value: v1.FieldValue{
 					Type:    v1.Integer,
 					Integer: &readyReplicas,
@@ -75,7 +74,7 @@ func Test_AgentHealthProber_Unhealthy(t *testing.T) {
 	}
 	readyReplicas := int64(cloDeployment.Status.ReadyReplicas)
 
-	healthProber := AgentHealthProber()
+	healthProber := AgentHealthProber(nil)
 
 	err := healthProber.WorkProber.HealthCheck(v1.ResourceIdentifier{
 		Group:     cloDeployment.APIVersion,

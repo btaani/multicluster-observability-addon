@@ -1,7 +1,7 @@
 # Hub Cluster Hostname will be used to template resources that make use of the
 # cluster hostname, like routes
 # WARNING: should match the list in the mcoa-demo chart values.yaml
-hubClusterName: my-cluster.com
+hubClusterName: local-cluster
 
 # List with the name of the spoke clusters as they were imported into the hub
 # cluster.

@@ -170,7 +170,7 @@ func runController(ctx context.Context, kubeConfig *rest.Config) error {
 			utils.AddOnDeploymentConfigGVR,
 		).
 		WithGetValuesFuncs(addonConfigValuesFn, addonhelm.GetValuesFunc(k8sClient)).
-		WithAgentHealthProber(addon.AgentHealthProber()).
+		WithAgentHealthProber(addon.AgentHealthProber(k8sClient)).
 		WithAgentRegistrationOption(registrationOption).
 		WithScheme(scheme.Scheme).
 		BuildHelmAgentAddon()

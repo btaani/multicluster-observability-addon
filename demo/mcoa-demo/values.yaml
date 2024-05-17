@@ -1,6 +1,6 @@
 # Hub Cluster Hostname will be used to template resources that make use of the
 # cluster hostname, like routes
-hubClusterName: my-cluster.com
+hubClusterName: local-cluster
 
 # Token of the OpenShift user, this is needed for Grafana to query tempo
 token: sha256~XXXXXXXXXXXXXXXXXXXXX
@@ -30,9 +30,9 @@ logging:
     enabled: true
     # Loki S3 bucket configuration
     s3Bucket:
-      endpoint: https://s3.us-east-1.amazonaws.com
-      region: us-east-1
-      bucketnames: jmarcal-bucket
+      endpoint: https://s3.us-east-2.amazonaws.com
+      region: us-east-2
+      bucketnames: btaani-lokibucket1
 
 # Tracing specific resources
 tracing:
